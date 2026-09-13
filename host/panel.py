@@ -53,18 +53,35 @@ def load_font(size=12, path=None):
     return ImageFont.load_default()
 
 
+try:
+    import numpy as _np
+except ImportError:
+    _np = None
+
+
 def to_rgb565(img):
-    """Pack a 64x32 RGB image into big-endian RGB565, matching the receiver."""
+    """Pack a 64x32 RGB image into big-endian RGB565, matching the receiver.
+
+    The pure-Python path walks 2048 pixels per frame. That is fine for a static
+    image and far too slow on a game's render path at 30 fps, so use numpy when
+    it is available -- roughly two orders of magnitude quicker.
+    """
     if img.mode != "RGB":
         img = img.convert("RGB")
     if img.size != (WIDTH, HEIGHT):
         img = img.resize((WIDTH, HEIGHT), Image.LANCZOS)
+
+    if _np is not None:
+        a = _np.asarray(img, dtype=_np.uint16)
+        v = ((a[:, :, 0] & 0xF8) << 8) | ((a[:, :, 1] & 0xFC) << 3) | (a[:, :, 2] >> 3)
+        return v.astype(">u2").tobytes()
+
     out = bytearray(WIDTH * HEIGHT * 2)
     i = 0
     for r, g, b in img.getdata():
-        v = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3)
-        out[i] = v >> 8
-        out[i + 1] = v & 0xFF
+        p = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3)
+        out[i] = p >> 8
+        out[i + 1] = p & 0xFF
         i += 2
     return bytes(out)
 
@@ -105,6 +122,29 @@ class Panel:
 
     # -- wire ----------------------------------------------------------------
 
+    def _drain(self):
+        """Discard unread ACKs.
+
+        The receiver acknowledges every command. A game loop fires frames
+        without waiting for those, so they accumulate in the receiver's send
+        buffer until its write blocks -- at which point it stops reading
+        frames, its receive window closes, and our sendall times out. Draining
+        each time keeps the backchannel empty.
+        """
+        if self.kind == "tcp":
+            import select
+            while select.select([self.sock], [], [], 0)[0]:
+                try:
+                    if not self.sock.recv(4096):
+                        break
+                except (BlockingIOError, OSError):
+                    break
+        else:
+            try:
+                self.ser.reset_input_buffer()
+            except Exception:
+                pass
+
     def _write(self, data):
         if self.kind == "tcp":
             self.sock.sendall(data)
@@ -119,6 +159,8 @@ class Panel:
             return b""
 
     def _send(self, cmd, payload=b"", wait_ack=False, timeout=2.0):
+        if not wait_ack:
+            self._drain()
         self._write(MAGIC + struct.pack("<BH", cmd, len(payload)) + payload)
         if not wait_ack:
             return True
@@ -134,8 +176,15 @@ class Panel:
         return self._send(CMD_PING, wait_ack=True, timeout=timeout)
 
     def show(self, img, wait_ack=False):
-        """Push one PIL image to the panel."""
-        return self._send(CMD_FRAME, to_rgb565(img), wait_ack=wait_ack)
+        """Push one PIL image to the panel.
+
+        A dropped frame is never worth taking a game down for, so transport
+        errors are swallowed and reported rather than raised.
+        """
+        try:
+            return self._send(CMD_FRAME, to_rgb565(img), wait_ack=wait_ack)
+        except (OSError, TimeoutError):
+            return False
 
     def brightness(self, value):
         self._send(CMD_BRIGHTNESS, bytes([max(0, min(255, int(value)))]))

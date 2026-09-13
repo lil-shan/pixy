@@ -17,9 +17,9 @@
 // ── Pin map ───────────────────────────────────────────────────────────────
 // D0/D1 are the UART, so everything starts at D2.
 constexpr int ENC1_CLK = 2,  ENC1_DT = 3,  ENC1_SW = 4;
-constexpr int ENC2_CLK = 5,  ENC2_DT = 6,  ENC2_SW = 7;
+constexpr int ENC2_CLK = A2, ENC2_DT = A3, ENC2_SW = A4;  // moved off D5/D6/D7
 constexpr int BTN_UP   = 8,  BTN_DOWN = 9, BTN_LEFT = 10, BTN_RIGHT = 11;
-constexpr int BTN_A    = 12, BTN_B   = A1;   // NOT D13: see note below
+constexpr int BTN_A    = 12, BTN_B   = A5;   // moved off A1; NOT D13, see note
 constexpr int BUZZER   = A0;
 // D13 is deliberately unused. It drives the onboard LED, whose series resistor
 // to ground divides against the ~40k internal pull-up and holds the pin below
@@ -139,6 +139,24 @@ static int32_t pollInput() {
        | ((uint32_t)(uint8_t)d1  << 24);
 }
 
+// Raw pin levels, for diagnosing wiring without anyone having to press
+// anything at the right moment. Bit order matches RAW_PINS below.
+//
+// Useful trick for the HW-040 modules: they carry 10k pull-ups to their own
+// VCC. If a module's VCC leg is disconnected, those 10k resistors pull toward
+// 0 V and beat the MCU's ~40k internal pull-up, so CLK/DT read LOW at rest.
+// A powered, idle module reads HIGH. That distinguishes "module unpowered"
+// from "module fine, signal wire off".
+static const int RAW_PINS[12] = {
+  ENC1_CLK, ENC1_DT, ENC1_SW, ENC2_CLK, ENC2_DT, ENC2_SW,
+  BTN_UP, BTN_DOWN, BTN_LEFT, BTN_RIGHT, BTN_A, BTN_B
+};
+static int32_t rawPins() {
+  int32_t v = 0;
+  for (uint8_t i = 0; i < 12; i++) v |= (digitalRead(RAW_PINS[i]) ? 1L : 0L) << i;
+  return v;
+}
+
 // Short blip. Passive buzzer only -- an active buzzer ignores the frequency.
 static void beep(int freq, int ms) {
   tone(BUZZER, freq, ms);
@@ -155,6 +173,7 @@ void setup() {
   Bridge.begin();
   Bridge.provide("poll_input", pollInput);
   Bridge.provide("beep", beep);
+  Bridge.provide("raw_pins", rawPins);
 
   Monitor.begin(115200);
   Monitor.println("pixy control deck ready");

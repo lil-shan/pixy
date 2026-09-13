@@ -7,12 +7,14 @@ button lights its dot and an encoder moves its bar, Phase 1 is done.
     python3 -m pixy.decktest 192.168.1.64
 """
 
+import os
 import sys
 import time
 
 from PIL import Image, ImageDraw
 
-sys.path.insert(0, "/home/arduino/ledmatrix")
+# panel.py sits next to the pixy package, wherever that has been deployed.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from panel import Panel, WIDTH, HEIGHT          # noqa: E402
 from pixy.input import Deck, NAMES, UP, DOWN, LEFT, RIGHT, A, B, START, SELECT  # noqa: E402
 
@@ -31,7 +33,7 @@ COLOUR = {
 }
 
 
-def main(host):
+def main(host, seconds=None):
     panel = Panel(host=host)
     panel.brightness(70)
     deck = Deck()
@@ -40,9 +42,10 @@ def main(host):
     enc = [0, 0]
     seen = set()
     last_report = 0.0
+    deadline = time.time() + seconds if seconds else None
 
     try:
-        while True:
+        while deadline is None or time.time() < deadline:
             s = deck.poll()
             enc[0] = max(-16, min(16, enc[0] + s.enc(0)))
             enc[1] = max(-16, min(16, enc[1] + s.enc(1)))
@@ -92,4 +95,6 @@ def main(host):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1] if len(sys.argv) > 1 else "192.168.1.64")
+    host = sys.argv[1] if len(sys.argv) > 1 else "192.168.1.64"
+    secs = float(sys.argv[2]) if len(sys.argv) > 2 else None
+    main(host, secs)
