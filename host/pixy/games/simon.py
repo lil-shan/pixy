@@ -3,6 +3,7 @@
 import random
 from ..canvas import INK, DIM, GOOD, BAD, CHARGE, LEARN, ARCADE
 from ..scene import Scene
+from ..input import UP, DOWN, LEFT, RIGHT, A, B
 
 COLS = [GOOD, CHARGE, LEARN, ARCADE]          # up, down, left, right
 BOXES = [(26, 8, 12, 6), (26, 20, 12, 6), (10, 14, 12, 6), (42, 14, 12, 6)]
@@ -24,10 +25,10 @@ class Simon(Scene):
         self.dead = False
 
     def update(self, s, ctx):
-        if s.pressed(6):
+        if s.pressed(B):
             return ("pop", {"score": self.score})
         if self.dead:
-            if s.pressed(4):
+            if s.pressed(A):
                 self.reset()
             return None
 

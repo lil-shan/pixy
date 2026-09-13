@@ -5,7 +5,8 @@
 Control grammar, and it never varies:
     encoder   move through choices / set a value
     A         confirm, act
-    START     back, pause          (encoder 1's push)
+    B         back, cancel
+    START     pause                (encoder 1's push)
     D-pad     direction, in games
 """
 
@@ -18,7 +19,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from panel import Panel                                    # noqa: E402
 from pixy.canvas import (Canvas, INK, DIM, FAINT, CHARGE,   # noqa: E402
                          LEARN, ARCADE, GOOD, BAD)
-from pixy.input import Deck, UP, DOWN, LEFT, RIGHT, A, START  # noqa: E402
+from pixy.input import Deck, UP, DOWN, LEFT, RIGHT, A, B, START  # noqa: E402
 from pixy.profile import Profile                            # noqa: E402
 from pixy.scene import Scene, Stack                         # noqa: E402
 
@@ -107,7 +108,7 @@ class LearnMenu(Menu):
 
     def update(self, s, ctx):
         self.move(s)
-        if s.pressed(START):
+        if s.pressed(B):
             return ("pop", None)
         if s.pressed(A):
             return ("push", self.items[self.sel]())
@@ -117,7 +118,7 @@ class LearnMenu(Menu):
         c.status("LEARN", ctx.profile.charge)
         self.draw_rows(c, lambda i: self.items[i].title,
                        lambda i: ctx.profile.level_of(self.items[i].key) or None)
-        c.hints("A PLAY", "START BACK")
+        c.hints("A PLAY", "B BACK")
 
     def resumed(self, value, ctx):
         pass
@@ -129,7 +130,7 @@ class ArcadeMenu(Menu):
 
     def update(self, s, ctx):
         self.move(s)
-        if s.pressed(START):
+        if s.pressed(B):
             return ("pop", None)
         if s.pressed(A):
             g = self.items[self.sel]
@@ -151,12 +152,12 @@ class ArcadeMenu(Menu):
         self.draw_rows(c, lambda i: self.items[i].title, note)
         g = self.items[self.sel]
         c.hints("A PLAY" if ctx.profile.unlocked(g.key) else f"A UNLOCK",
-                "START BACK")
+                "B BACK")
 
 
 class ProfileScreen(Scene):
     def update(self, s, ctx):
-        if s.pressed(START) or s.pressed(A):
+        if s.pressed(B) or s.pressed(A):
             return ("pop", None)
         return None
 
@@ -169,7 +170,7 @@ class ProfileScreen(Scene):
         best = max([ctx.profile.best(g.key) for g in ARCADE_GAMES] + [0])
         c.text(2, 22, "BEST", DIM)
         c.text(40, 22, str(best), GOOD)
-        c.hints("START BACK")
+        c.hints("B BACK")
 
 
 class Toast(Scene):
@@ -180,7 +181,7 @@ class Toast(Scene):
 
     def update(self, s, ctx):
         self.left -= 1
-        if self.left <= 0 or s.pressed(A) or s.pressed(START):
+        if self.left <= 0 or s.pressed(A) or s.pressed(B):
             return ("pop", None)
         return None
 
@@ -203,7 +204,7 @@ class Results(Scene):
 
     def update(self, s, ctx):
         self.shown += 1
-        if self.shown > 12 and (s.pressed(A) or s.pressed(START)):
+        if self.shown > 12 and (s.pressed(A) or s.pressed(B)):
             return ("pop", None)
         return None
 

@@ -169,9 +169,24 @@ nothing. `DETENT_STEPS = 4` because HW-040 emits four transitions per detent.
 
 ---
 
+## 2026-09-14 — B button recovered
+
+Stuck low on three separately verified pins (D13, A1, A5). A5 measured HIGH
+bare, then went LOW the moment the button was attached — a controlled
+experiment pinning it on the switch, not the pin. After rewiring, A5 reads
+HIGH at rest.
+
+Restored as **back/cancel** across the shell and all six games, which frees the
+encoder push for pause and gives the console a proper two-button grammar:
+A confirms, B goes back, and neither is ever overloaded.
+
+Encoder 2 remains dead — its right-hand knob reaches no pin on either pin set,
+so its signal wires never made it to the header. The console is designed to
+need only encoder 1.
+
 ## Open items
 
-- Encoder direction and detent ratio unverified on hardware
-- Buzzer not yet fitted (passive piezo, A0)
-- `to_rgb565()` still a pure-Python per-pixel loop — vectorise with numpy
-  before the first game, 2048 iterations × 30 fps is on the render path
+- Encoder 2 signal wires not connected — console does not depend on it
+- Buzzer not yet fitted (passive piezo, A0). `beep()` is already wired
+- Encoder direction convention unconfirmed by feel (sign flip is one constant)
+- ~~`to_rgb565()` pure-Python loop~~ — done, numpy path at 0.033 ms/frame

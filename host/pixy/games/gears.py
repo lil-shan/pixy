@@ -9,6 +9,7 @@ import random
 from math import gcd
 from ..canvas import INK, DIM, GOOD, CHARGE, LEARN
 from ..scene import Scene
+from ..input import UP, DOWN, LEFT, RIGHT, A, B
 
 
 class Gears(Scene):
@@ -31,7 +32,7 @@ class Gears(Scene):
         return f"{a // g}:{b // g}"
 
     def update(self, s, ctx):
-        if s.pressed(6):
+        if s.pressed(B):
             return ("pop", {"charge": self.score, "score": self.score})
         self.phase += 0.25
         if self.flash:
@@ -44,13 +45,13 @@ class Gears(Scene):
             return None
 
         step = s.enc(0)
-        if s.pressed(2):
+        if s.pressed(RIGHT):
             step += 1
-        if s.pressed(3):
+        if s.pressed(LEFT):
             step -= 1
         if step:
             self.driven = max(4, min(120, self.driven + step))
-        if s.pressed(4) and self.driven == self.want:
+        if s.pressed(A) and self.driven == self.want:
             self.score += 30
             self.flash = 24
         return None

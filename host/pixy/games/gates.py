@@ -8,6 +8,7 @@ poke at truth tables rather than memorise them.
 import random
 from ..canvas import INK, DIM, GOOD, BAD, LEARN, CHARGE
 from ..scene import Scene
+from ..input import UP, DOWN, LEFT, RIGHT, A, B
 
 KINDS = [
     ("AND",  lambda a, b: a and b),
@@ -38,7 +39,7 @@ class Gates(Scene):
         self.solved = False
 
     def update(self, s, ctx):
-        if s.pressed(6):                      # START = back
+        if s.pressed(B):                      # START = back
             return ("pop", {"charge": self.score, "score": self.score})
         if self.flash:
             self.flash -= 1
@@ -49,13 +50,13 @@ class Gates(Scene):
                 self.new_round()
             return None
 
-        if s.pressed(0) or s.pressed(2):
+        if s.pressed(UP) or s.pressed(RIGHT):
             self.sel = 0
-        if s.pressed(1) or s.pressed(3):
+        if s.pressed(DOWN) or s.pressed(LEFT):
             self.sel = 1
         if s.enc(0):
             self.sel = 1 if s.enc(0) > 0 else 0
-        if s.pressed(4):                      # A flips the selected input
+        if s.pressed(A):                      # A flips the selected input
             if self.sel == 0:
                 self.a ^= 1
             else:

@@ -7,6 +7,7 @@ encoder is there.
 
 from ..canvas import WIDTH, HEIGHT, INK, DIM, GOOD, CHARGE, LEARN, ARCADE
 from ..scene import Scene
+from ..input import UP, DOWN, LEFT, RIGHT, A, B
 
 BRICK_TOP, BRICK_ROWS, BRICK_H = 8, 4, 2
 BRICK_COLS, BRICK_W = 8, 8
@@ -32,26 +33,26 @@ class BreakoutScene(Scene):
         self.over = self.won = False
 
     def update(self, s, ctx):
-        if s.pressed(6):                        # START exits
+        if s.pressed(B):                        # START exits
             ctx.profile.record(self.key, self.score)
             return ("pop", {"score": self.score})
 
         if self.over or self.won:
-            if s.pressed(4):
+            if s.pressed(A):
                 ctx.profile.record(self.key, self.score)
                 self.reset(full=True)
             return None
 
         self.paddle_x += s.enc(0) * 2
-        if s.down(3):
+        if s.down(LEFT):
             self.paddle_x -= 1.5
-        if s.down(2):
+        if s.down(RIGHT):
             self.paddle_x += 1.5
         self.paddle_x = max(0, min(WIDTH - PADDLE_W, self.paddle_x))
 
         if self.stuck:
             self.ball = [self.paddle_x + PADDLE_W / 2, PADDLE_Y - 1.0]
-            if s.pressed(4):
+            if s.pressed(A):
                 self.stuck = False
                 self.vel = [0.5, -0.8]
             return None
@@ -109,4 +110,4 @@ class BreakoutScene(Scene):
         if self.over or self.won:
             c.banner("CLEARED" if self.won else "GAME OVER",
                      GOOD if self.won else ARCADE, f"BEST {ctx.profile.best(self.key)}")
-        c.hints("A SERVE" if self.stuck else str(self.score), "START EXIT")
+        c.hints("A SERVE" if self.stuck else str(self.score), "B BACK")

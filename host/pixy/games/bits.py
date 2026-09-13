@@ -7,6 +7,7 @@ right pick a bit, A flips it, and the running decimal updates as you go.
 import random
 from ..canvas import INK, DIM, GOOD, CHARGE, LEARN
 from ..scene import Scene
+from ..input import UP, DOWN, LEFT, RIGHT, A, B
 
 
 class Bits(Scene):
@@ -25,7 +26,7 @@ class Bits(Scene):
         self.width = 8 if hi > 15 else 4
 
     def update(self, s, ctx):
-        if s.pressed(6):
+        if s.pressed(B):
             return ("pop", {"charge": self.score, "score": self.score})
         if self.flash:
             self.flash -= 1
@@ -36,13 +37,13 @@ class Bits(Scene):
                 self.new_round()
             return None
 
-        if s.pressed(2):
+        if s.pressed(RIGHT):
             self.sel = min(self.width - 1, self.sel + 1)
-        if s.pressed(3):
+        if s.pressed(LEFT):
             self.sel = max(0, self.sel - 1)
         if s.enc(0):
             self.sel = max(0, min(self.width - 1, self.sel - s.enc(0)))
-        if s.pressed(4):
+        if s.pressed(A):
             self.value ^= 1 << self.sel
             if self.value == self.target:
                 self.score += 25
