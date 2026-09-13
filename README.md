@@ -75,6 +75,32 @@ so two rear pads carry the two least timing-critical lines.
 Pin 8 is the E address line, unused on a 1/16 scan panel. Power the panel from
 its own 5 V supply — never from the XIAO's 5V pin — and keep grounds common.
 
+## Control deck
+
+| Control | Pin | Notes |
+|---|---|---|
+| Encoder 1 — CLK / DT / SW | D2 / D3 / D4 | HW-040 module |
+| Encoder 2 — CLK / DT / SW | D5 / D6 / D7 | HW-040 module |
+| Up / Down / Left / Right | D8 / D9 / D10 / D11 | Big tactile, internal pull-ups |
+| A / B | D12 / A1 | Small tactile |
+| Buzzer | A0 | Passive piezo — an active one ignores the frequency |
+
+**Common rails.** All grounds are shorted together across the panel supply, the
+XIAO, the UNO Q and every button return. Both HW-040 modules share one 3.3 V rail
+from the UNO Q header.
+
+**Feed the HW-040s from 3V3, not 5V.** They carry onboard pull-ups to VCC, so a
+5 V supply puts 5 V onto the UNO Q's 3.3 V-logic inputs. Their onboard pull-ups
+also mean you don't need external ones on CLK/DT.
+
+**D13 is unusable as a button input.** It drives the onboard LED, whose series
+resistor to ground divides against the ~40 kΩ internal pull-up and holds the pin
+below threshold — a button there reads as permanently pressed. That's why B is
+on A1.
+
+See [BUILDLOG.md](BUILDLOG.md) for the full iteration history — every failure,
+its cause and its fix.
+
 ## Setup
 
 **ESP32 side**
