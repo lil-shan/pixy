@@ -1,0 +1,17 @@
+# WiFi credentials -- never commit. Copy secrets.h.example to secrets.h.
+xiao_wifi/secrets.h
+
+# Arduino build output
+build/
+*.bin
+*.elf
+*.hex
+
+# Python
+__pycache__/
+*.pyc
+venv/
+
+# Editor / OS
+.vscode/
+.DS_Store
