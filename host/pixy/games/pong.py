@@ -8,7 +8,7 @@ rather than a keyboard port of it.
 
 from ..canvas import WIDTH, HEIGHT, INK, DIM, FAINT, LEARN, ARCADE, GOOD
 from ..scene import Scene
-from ..input import A, B
+from ..input import UP, DOWN, LEFT, RIGHT, A, B
 
 PADDLE_H, TOP, BOT = 7, 7, 25
 WIN_SCORE = 7
@@ -19,6 +19,8 @@ class Pong(Scene):
 
     def enter(self, ctx):
         self.score = [0, 0]
+        self.human2 = False
+        self.idle2 = 999
         self.paddle = [(TOP + BOT) / 2 - PADDLE_H / 2] * 2
         self.serve(1)
 
@@ -37,9 +39,33 @@ class Pong(Scene):
                 self.enter(ctx)
             return None
 
-        # One encoder each. Both paddles move on their own dial, independently.
+        # Player 1 is always encoder 1.
         self.paddle[0] += s.enc(0) * 2
-        self.paddle[1] += s.enc(1) * 2
+
+        # Player 2 takes whichever input is actually present: encoder 2 if it
+        # is alive, otherwise up/down. Either way the game is playable, and it
+        # silently gets better if that encoder is ever repaired.
+        p2 = s.enc(1) * 2
+        if s.down(UP):
+            p2 -= 2
+        if s.down(DOWN):
+            p2 += 2
+        if p2:
+            self.paddle[1] += p2
+            self.human2 = True
+            self.idle2 = 0
+        else:
+            self.idle2 += 1
+
+        # Nobody on the right for three seconds? Hand it to the computer, so a
+        # kid on their own still has a game. It yields again the moment a
+        # second player touches anything.
+        if self.idle2 > 90:
+            self.human2 = False
+        if not self.human2 and not self.waiting:
+            target = self.ball[1] - PADDLE_H / 2
+            self.paddle[1] += max(-1.1, min(1.1, target - self.paddle[1]))
+
         for i in (0, 1):
             self.paddle[i] = max(TOP, min(BOT - PADDLE_H, self.paddle[i]))
 
@@ -82,10 +108,12 @@ class Pong(Scene):
         c.px(int(self.ball[0]), int(self.ball[1]), INK)
         c.text(22, 0, str(self.score[0]), LEARN)
         c.text(38, 0, str(self.score[1]), ARCADE)
+        if not self.human2:
+            c.text(46, 0, "CPU", DIM)
 
         if max(self.score) >= WIN_SCORE:
             who = "LEFT WINS" if self.score[0] > self.score[1] else "RIGHT WINS"
             c.banner(who, LEARN if self.score[0] > self.score[1] else ARCADE)
             c.hints("A AGAIN", "B BACK")
         else:
-            c.hints("2 DIALS", "B BACK")
+            c.hints("2P" if self.human2 else "1P VS CPU", "B BACK")

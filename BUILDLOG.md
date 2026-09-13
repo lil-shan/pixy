@@ -206,9 +206,33 @@ retries every 2 s until it takes.
 With both dials alive, Pong went in (two encoders, two players) and Gear Lab
 got a dial per gear.
 
+## 2026-09-14 — Encoder 2 abandoned; console made independent of it
+
+Two encoders were tried on three pin sets. The second module was replaced with
+one proven working on D5/D6/D7 (52/51 transitions), then resoldered to the
+analog pins, and still read nothing. A CLK/SW swap was found and corrected
+(CLK is A4, SW is A2, DT is A3) — still nothing.
+
+Worth recording *why* this was so slow to pin down: a swapped CLK and SW does
+not look like a wiring fault from software. The decoder reads a static pin as
+CLK against a live DT, which produces an endless +1/-1 alternation that never
+accumulates to a whole detent. `enc(1)` reads exactly 0 — indistinguishable
+from a disconnected encoder.
+
+**Decision: stop.** Encoder 2 is not on the critical path and the time was
+better spent elsewhere. Nothing in the console requires it:
+
+- Pong's player 2 accepts encoder 2 *or* up/down, and falls back to a CPU
+  opponent after 3 s of no input, so a kid alone still has a game.
+- Gear Lab uses encoder 2 only as an optional second dial; left/right do the
+  same job.
+- Everything else was already single-encoder.
+
+If it is ever repaired it starts working again with no code change.
+
 ## Open items
 
-- Encoder 2 signal wires not connected — console does not depend on it
+- Encoder 2 dead after three pin sets and a module swap; console does not depend on it
 - Buzzer not yet fitted (passive piezo, A0). `beep()` is already wired
 - Encoder direction convention unconfirmed by feel (sign flip is one constant)
 - ~~`to_rgb565()` pure-Python loop~~ — done, numpy path at 0.033 ms/frame

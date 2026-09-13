@@ -17,7 +17,7 @@
 // ── Pin map ───────────────────────────────────────────────────────────────
 // D0/D1 are the UART, so everything starts at D2.
 constexpr int ENC1_CLK = 2,  ENC1_DT = 3,  ENC1_SW = 4;
-constexpr int ENC2_CLK = 5,  ENC2_DT = 6,  ENC2_SW = 7;
+constexpr int ENC2_CLK = A4, ENC2_DT = A3, ENC2_SW = A2;  // as soldered
 constexpr int BTN_UP   = 8,  BTN_DOWN = 9, BTN_LEFT = 10, BTN_RIGHT = 11;
 constexpr int BTN_A    = 12, BTN_B   = A5;   // moved off A1; NOT D13, see note
 constexpr int BUZZER   = A0;
@@ -160,7 +160,7 @@ static int32_t rawPins() {
 // Every header pin we are not otherwise using, so a wire can be found wherever
 // it actually landed rather than only where it was supposed to go. A0 is
 // omitted because it drives the buzzer.
-static const int SPARE_PINS[7] = { 13, A1, A2, A3, A4, A4, A4 };
+static const int SPARE_PINS[7] = { 5, 6, 7, 13, A1, A1, A1 };
 static const int SPARE2_PINS[2] = { A4, A5 };
 static int32_t scanAll() {
   int32_t v = 0;
@@ -183,24 +183,41 @@ void setup() {
   for (auto &e : enc) e.prev = (digitalRead(e.pinA) << 1) | digitalRead(e.pinB);
 
   // Spare header pins as pulled-up inputs, purely so scanAll() can see them.
-  for (int p : {13}) pinMode(p, INPUT_PULLUP);
+  for (int p : {5, 6, 7, 13}) pinMode(p, INPUT_PULLUP);
   pinMode(A1, INPUT_PULLUP);
 
-  Bridge.begin();
+  // Bridge.begin() is deliberately NOT called here. On a cold boot the MCU is
+  // running in milliseconds while Linux needs ~40s to start arduino-router, so
+  // a begin() in setup() simply fails and the controls stay dead until someone
+  // reflashes. loop() brings it up instead, once the router is actually there.
   Monitor.begin(115200);
   Monitor.println("pixy control deck starting");
 }
 
-// Registration has to be retried. Bridge.provide() binds the name on the
-// router, so if the MCU boots before the router is listening -- which is a
-// coin flip after a power cycle -- the bind fails silently and the methods
-// stay invisible to Python forever. Keep trying until they take.
+// Bringing the bridge up has to be retried, in two stages.
+//
+// Bridge.begin() only short-circuits once it has succeeded; a failed call
+// re-allocates the transport, client, server and a fresh Zephyr thread every
+// time. So retries are bounded -- enough to cover Linux booting, not enough to
+// leak indefinitely if the router never appears.
+//
+// provide() then binds each name on the router. Both stages fail silently, and
+// a silent failure here means the controls never work at all.
+static bool bridgeUp = false;
 static bool registered = false;
 
-static void tryRegister() {
+static void tryBridge() {
   static uint32_t nextTry = 0;
+  static uint8_t attempts = 0;
   if (registered || millis() < nextTry) return;
-  nextTry = millis() + 2000;
+  nextTry = millis() + 3000;
+
+  if (!bridgeUp) {
+    if (attempts++ > 30) return;        // ~90s, then give up rather than leak
+    bridgeUp = Bridge.begin();
+    if (!bridgeUp) return;
+    Monitor.println("bridge up");
+  }
 
   registered = Bridge.provide("poll_input", pollInput)
             && Bridge.provide("beep", beep)
@@ -210,7 +227,7 @@ static void tryRegister() {
 }
 
 void loop() {
-  tryRegister();
+  tryBridge();
 
   static uint32_t nextScan = 0;
   uint32_t nowUs = micros();
