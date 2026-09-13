@@ -19,8 +19,11 @@
 constexpr int ENC1_CLK = 2,  ENC1_DT = 3,  ENC1_SW = 4;
 constexpr int ENC2_CLK = 5,  ENC2_DT = 6,  ENC2_SW = 7;
 constexpr int BTN_UP   = 8,  BTN_DOWN = 9, BTN_LEFT = 10, BTN_RIGHT = 11;
-constexpr int BTN_A    = 12, BTN_B   = 13;
+constexpr int BTN_A    = 12, BTN_B   = A1;   // NOT D13: see note below
 constexpr int BUZZER   = A0;
+// D13 is deliberately unused. It drives the onboard LED, whose series resistor
+// to ground divides against the ~40k internal pull-up and holds the pin below
+// threshold -- a button there reads as permanently pressed.
 
 // Bit positions in the packed reply. Python mirrors this order exactly.
 enum : uint8_t {
