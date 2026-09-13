@@ -17,7 +17,7 @@
 // ── Pin map ───────────────────────────────────────────────────────────────
 // D0/D1 are the UART, so everything starts at D2.
 constexpr int ENC1_CLK = 2,  ENC1_DT = 3,  ENC1_SW = 4;
-constexpr int ENC2_CLK = A2, ENC2_DT = A3, ENC2_SW = A4;  // moved off D5/D6/D7
+constexpr int ENC2_CLK = 5,  ENC2_DT = 6,  ENC2_SW = 7;
 constexpr int BTN_UP   = 8,  BTN_DOWN = 9, BTN_LEFT = 10, BTN_RIGHT = 11;
 constexpr int BTN_A    = 12, BTN_B   = A5;   // moved off A1; NOT D13, see note
 constexpr int BUZZER   = A0;
@@ -157,6 +157,18 @@ static int32_t rawPins() {
   return v;
 }
 
+// Every header pin we are not otherwise using, so a wire can be found wherever
+// it actually landed rather than only where it was supposed to go. A0 is
+// omitted because it drives the buzzer.
+static const int SPARE_PINS[7] = { 13, A1, A2, A3, A4, A4, A4 };
+static const int SPARE2_PINS[2] = { A4, A5 };
+static int32_t scanAll() {
+  int32_t v = 0;
+  for (uint8_t i = 0; i < 7; i++) v |= (digitalRead(SPARE_PINS[i]) ? 1L : 0L) << i;
+  for (uint8_t i = 0; i < 2; i++) v |= (digitalRead(SPARE2_PINS[i]) ? 1L : 0L) << (7 + i);
+  return v;
+}
+
 // Short blip. Passive buzzer only -- an active buzzer ignores the frequency.
 static void beep(int freq, int ms) {
   tone(BUZZER, freq, ms);
@@ -170,16 +182,36 @@ void setup() {
 
   for (auto &e : enc) e.prev = (digitalRead(e.pinA) << 1) | digitalRead(e.pinB);
 
-  Bridge.begin();
-  Bridge.provide("poll_input", pollInput);
-  Bridge.provide("beep", beep);
-  Bridge.provide("raw_pins", rawPins);
+  // Spare header pins as pulled-up inputs, purely so scanAll() can see them.
+  for (int p : {13}) pinMode(p, INPUT_PULLUP);
+  pinMode(A1, INPUT_PULLUP);
 
+  Bridge.begin();
   Monitor.begin(115200);
-  Monitor.println("pixy control deck ready");
+  Monitor.println("pixy control deck starting");
+}
+
+// Registration has to be retried. Bridge.provide() binds the name on the
+// router, so if the MCU boots before the router is listening -- which is a
+// coin flip after a power cycle -- the bind fails silently and the methods
+// stay invisible to Python forever. Keep trying until they take.
+static bool registered = false;
+
+static void tryRegister() {
+  static uint32_t nextTry = 0;
+  if (registered || millis() < nextTry) return;
+  nextTry = millis() + 2000;
+
+  registered = Bridge.provide("poll_input", pollInput)
+            && Bridge.provide("beep", beep)
+            && Bridge.provide("raw_pins", rawPins)
+            && Bridge.provide("scan_all", scanAll);
+  if (registered) Monitor.println("pixy control deck registered");
 }
 
 void loop() {
+  tryRegister();
+
   static uint32_t nextScan = 0;
   uint32_t nowUs = micros();
   if ((int32_t)(nowUs - nextScan) < 0) return;

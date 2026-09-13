@@ -51,6 +51,11 @@ class Gears(Scene):
             step -= 1
         if step:
             self.driven = max(4, min(120, self.driven + step))
+        # Second dial drives the driver gear, so both sides of the ratio are
+        # yours to set -- the lesson is the relationship, not one number.
+        if s.enc(1):
+            self.driver = max(4, min(60, self.driver + s.enc(1)))
+            self.want = max(4, min(120, self.want))
         if s.pressed(A) and self.driven == self.want:
             self.score += 30
             self.flash = 24
@@ -69,7 +74,7 @@ class Gears(Scene):
             c.text(46, 21, "OK", GOOD)
         if self.flash:
             c.banner("LOCKED +30", GOOD)
-        c.hints("DIAL", f"{self.round + 1}/5")
+        c.hints("2 DIALS", f"{self.round + 1}/5")
 
     def _gear(self, c, cx, cy, r, teeth, col, phase):
         """Teeth as spokes on a ring. The driven gear turns slower by exactly

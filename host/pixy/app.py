@@ -29,10 +29,11 @@ from pixy.games.gears import Gears                          # noqa: E402
 from pixy.games.snake import Snake                          # noqa: E402
 from pixy.games.simon import Simon                          # noqa: E402
 from pixy.games.breakout import BreakoutScene               # noqa: E402
+from pixy.games.pong import Pong                            # noqa: E402
 
 FPS = 30
 LEARN_GAMES = [Gates, Bits, Gears]
-ARCADE_GAMES = [BreakoutScene, Snake, Simon]
+ARCADE_GAMES = [BreakoutScene, Pong, Snake, Simon]
 
 
 class Ctx:

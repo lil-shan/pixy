@@ -180,9 +180,31 @@ Restored as **back/cancel** across the shell and all six games, which frees the
 encoder push for pause and gives the console a proper two-button grammar:
 A confirms, B goes back, and neither is ever overloaded.
 
-Encoder 2 remains dead — its right-hand knob reaches no pin on either pin set,
-so its signal wires never made it to the header. The console is designed to
-need only encoder 1.
+## 2026-09-14 — Encoder 2: faulty module, proven by swap
+
+Isolated in stages rather than guessed at:
+
+1. Turning the right knob changed **no pin anywhere** — not on D5/D6/D7, not on
+   A2/A3/A4. The signal path was open.
+2. Grounds measured continuous to the Arduino GND pin, killing the
+   missing-ground theory. Worth noting the contacts short CLK/DT straight to
+   common, so even a missing VCC would still have produced transitions.
+3. Shorting the module's own pads to ground produced nothing at the MCU,
+   bypassing the encoder component entirely.
+4. A **new encoder wired to D5/D6/D7 worked immediately** — 52 transitions on
+   CLK, 51 on DT, 10 on the push.
+
+So the original module or its wiring was faulty. Firmware moved back to
+D5/D6/D7 and encoder 2 is live.
+
+Also fixed a latent bug found along the way: `Bridge.provide()` binds names on
+the router, and the MCU only registered once in `setup()`. Boot before the
+router is listening — a coin flip after a power cycle — and the binds fail
+silently, leaving the controls invisible to Python forever. Registration now
+retries every 2 s until it takes.
+
+With both dials alive, Pong went in (two encoders, two players) and Gear Lab
+got a dial per gear.
 
 ## Open items
 
