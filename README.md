@@ -79,11 +79,29 @@ its own 5 V supply — never from the XIAO's 5V pin — and keep grounds common.
 
 | Control | Pin | Notes |
 |---|---|---|
-| Encoder 1 — CLK / DT / SW | D2 / D3 / D4 | HW-040 module |
-| Encoder 2 — CLK / DT / SW | D5 / D6 / D7 | HW-040 module |
+| Dial — CLK / DT / SW | D2 / D3 / D4 | HW-040 module |
 | Up / Down / Left / Right | D8 / D9 / D10 / D11 | Big tactile, internal pull-ups |
 | A / B | D12 / A1 | Small tactile |
 | Buzzer | A0 | Passive piezo — an active one ignores the frequency |
+
+One dial only. A second encoder was tried and abandoned; `enc(1)` is still
+wired through and returns 0, so one can be added later without touching any
+game.
+
+## Controls
+
+The grammar never varies, on any screen:
+
+| Control | Always does |
+|---|---|
+| Dial | Move through choices, set a value |
+| A | Confirm, act |
+| B | Back, cancel |
+| D-pad | Direction, inside games |
+
+Every screen carries a hint bar saying what A and B do right now, every game
+opens with a two-line help card, and a first-run tutorial makes you use each
+control once before it lets you into the menus.
 
 **Common rails.** All grounds are shorted together across the panel supply, the
 XIAO, the UNO Q and every button return. Both HW-040 modules share one 3.3 V rail

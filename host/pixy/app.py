@@ -2,12 +2,15 @@
 
     python3 -m pixy.app 192.168.1.64
 
-Control grammar, and it never varies:
-    encoder   move through choices / set a value
+Control grammar. It never varies, anywhere:
+
+    dial      move through choices / set a value
     A         confirm, act
     B         back, cancel
-    START     pause                (encoder 1's push)
-    D-pad     direction, in games
+    d-pad     direction, inside games
+
+There is one dial. The second encoder was removed from the hardware, so
+nothing here refers to it.
 """
 
 import os
@@ -16,24 +19,37 @@ import time
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from panel import Panel                                    # noqa: E402
-from pixy.canvas import (Canvas, INK, DIM, FAINT, CHARGE,   # noqa: E402
-                         LEARN, ARCADE, GOOD, BAD)
-from pixy.input import Deck, UP, DOWN, LEFT, RIGHT, A, B, START  # noqa: E402
-from pixy.profile import Profile                            # noqa: E402
-from pixy.scene import Scene, Stack                         # noqa: E402
+from panel import Panel                                          # noqa: E402
+from pixy.canvas import (Canvas, INK, DIM, FAINT, CHARGE, LEARN,  # noqa: E402
+                         ARCADE, GOOD, BAD, WIDTH, CONTENT_TOP,
+                         CONTENT_BOT, ROW_H, ROWS)
+from pixy.input import Deck, UP, DOWN, LEFT, RIGHT, A, B, START   # noqa: E402
+from pixy.profile import Profile                                  # noqa: E402
+from pixy.scene import Scene, Stack                               # noqa: E402
 
-from pixy.games.gates import Gates                          # noqa: E402
-from pixy.games.bits import Bits                            # noqa: E402
-from pixy.games.gears import Gears                          # noqa: E402
-from pixy.games.snake import Snake                          # noqa: E402
-from pixy.games.simon import Simon                          # noqa: E402
-from pixy.games.breakout import BreakoutScene               # noqa: E402
-from pixy.games.pong import Pong                            # noqa: E402
+from pixy.games.gates import Gates                                # noqa: E402
+from pixy.games.bits import Bits                                  # noqa: E402
+from pixy.games.gears import Gears                                # noqa: E402
+from pixy.games.snake import Snake                                # noqa: E402
+from pixy.games.simon import Simon                                # noqa: E402
+from pixy.games.breakout import BreakoutScene                     # noqa: E402
+from pixy.games.pong import Pong                                  # noqa: E402
 
 FPS = 30
 LEARN_GAMES = [Gates, Bits, Gears]
 ARCADE_GAMES = [BreakoutScene, Pong, Snake, Simon]
+
+# Two lines each, max 15 characters, shown before every game. Nobody should
+# have to guess which button does what on a device with unlabelled controls.
+HELP = {
+    "gates":    ("PICK AN INPUT", "A FLIPS IT"),
+    "bits":     ("DIAL PICKS BIT", "A FLIPS IT"),
+    "gears":    ("DIAL THE GEAR", "A LOCKS IT IN"),
+    "breakout": ("DIAL = PADDLE", "A SERVES"),
+    "pong":     ("DIAL = PADDLE", "UP DOWN = P2"),
+    "snake":    ("D-PAD STEERS", "EAT THE DOTS"),
+    "simon":    ("WATCH, REPEAT", "USE THE D-PAD"),
+}
 
 
 class Ctx:
@@ -42,10 +58,10 @@ class Ctx:
         self.deck = deck
 
 
+# ── Menus ─────────────────────────────────────────────────────────────────
 class Menu(Scene):
-    """Vertical list. One row per item, one selected, scrolls when it must."""
-
-    rows = 3
+    """Vertical list. Exactly ROWS rows fit the content band; anything more
+    scrolls, with arrows so it is obvious there is more."""
 
     def __init__(self, title, items, accent=INK):
         self.title, self.items, self.accent = title, items, accent
@@ -57,49 +73,49 @@ class Menu(Scene):
             d += 1
         if s.pressed(UP):
             d -= 1
-        if d:
-            self.sel = max(0, min(len(self.items) - 1, self.sel + d))
-            self.top = max(min(self.top, self.sel), self.sel - self.rows + 1)
+        if not d:
+            return
+        self.sel = max(0, min(len(self.items) - 1, self.sel + d))
+        # Keep the selection inside the window.
+        self.top = min(self.top, self.sel)
+        self.top = max(self.top, self.sel - ROWS + 1)
+        self.top = max(0, min(self.top, max(0, len(self.items) - ROWS)))
 
-    def draw_rows(self, c, label_of, note_of=None):
-        for i in range(self.top, min(len(self.items), self.top + self.rows)):
-            y = 8 + (i - self.top) * 7
+    def draw_rows(self, c, ctx, label_of, note_of=None, colour_of=None):
+        # Reserve the arrow column only when the list actually scrolls.
+        pad = c.SCROLL_W + 2 if len(self.items) > ROWS else 1
+        for i in range(self.top, min(len(self.items), self.top + ROWS)):
+            y = CONTENT_TOP + (i - self.top) * ROW_H
             on = i == self.sel
+            col = colour_of(i) if colour_of else self.accent
             if on:
-                c.rect(0, y - 1, 64, 7, (18, 22, 28))
-                c.text(1, y, ">", self.accent)
-            c.text(6, y, label_of(i)[:12], INK if on else DIM)
+                c.rect(0, y - 1, WIDTH, ROW_H, (26, 30, 38))
+                c.text(0, y, ">", col)
+            c.text(5, y, label_of(i)[:11], INK if on else DIM)
             if note_of:
                 n = note_of(i)
-                if n:
-                    c.text(64 - 1 - len(str(n)) * 4, y, str(n),
-                           self.accent if on else FAINT)
+                if n is not None:
+                    t = str(n)
+                    c.text(WIDTH - pad - len(t) * 4, y, t, col if on else FAINT)
+        c.scroll_marks(self.top, ROWS, len(self.items))
 
 
 class Home(Menu):
+    COLOURS = [LEARN, ARCADE, INK]
+
     def __init__(self):
         super().__init__("PIXY", ["LEARN", "ARCADE", "PROFILE"], CHARGE)
 
     def update(self, s, ctx):
         self.move(s)
         if s.pressed(A):
-            if self.sel == 0:
-                return ("push", LearnMenu())
-            if self.sel == 1:
-                return ("push", ArcadeMenu())
-            return ("push", ProfileScreen())
+            return ("push", [LearnMenu, ArcadeMenu, ProfileScreen][self.sel]())
         return None
 
     def draw(self, c, ctx):
         c.status("PIXY", ctx.profile.charge)
-        colours = [LEARN, ARCADE, INK]
-        for i, item in enumerate(self.items):
-            y = 8 + i * 7
-            on = i == self.sel
-            if on:
-                c.rect(0, y - 1, 64, 7, (18, 22, 28))
-                c.text(1, y, ">", colours[i])
-            c.text(6, y, item, colours[i] if on else DIM)
+        self.draw_rows(c, ctx, lambda i: self.items[i],
+                       colour_of=lambda i: self.COLOURS[i])
         c.hints("A OPEN", f"{ctx.profile.charge}")
 
 
@@ -112,17 +128,14 @@ class LearnMenu(Menu):
         if s.pressed(B):
             return ("pop", None)
         if s.pressed(A):
-            return ("push", self.items[self.sel]())
+            return ("push", Help(self.items[self.sel]))
         return None
 
     def draw(self, c, ctx):
         c.status("LEARN", ctx.profile.charge)
-        self.draw_rows(c, lambda i: self.items[i].title,
+        self.draw_rows(c, ctx, lambda i: self.items[i].title,
                        lambda i: ctx.profile.level_of(self.items[i].key) or None)
         c.hints("A PLAY", "B BACK")
-
-    def resumed(self, value, ctx):
-        pass
 
 
 class ArcadeMenu(Menu):
@@ -136,11 +149,11 @@ class ArcadeMenu(Menu):
         if s.pressed(A):
             g = self.items[self.sel]
             if ctx.profile.unlocked(g.key):
-                return ("push", g())
+                return ("push", Help(g))
             if ctx.profile.unlock(g.key, g.cost):
                 ctx.deck.beep(1400, 60)
-                return ("push", g())
-            return ("push", Toast("NEED " + str(g.cost), BAD))
+                return ("push", Help(g))
+            return ("push", Toast(f"NEED {g.cost}", BAD))
         return None
 
     def draw(self, c, ctx):
@@ -150,10 +163,9 @@ class ArcadeMenu(Menu):
             g = self.items[i]
             return ctx.profile.best(g.key) if ctx.profile.unlocked(g.key) else g.cost
 
-        self.draw_rows(c, lambda i: self.items[i].title, note)
+        self.draw_rows(c, ctx, lambda i: self.items[i].title, note)
         g = self.items[self.sel]
-        c.hints("A PLAY" if ctx.profile.unlocked(g.key) else f"A UNLOCK",
-                "B BACK")
+        c.hints("A PLAY" if ctx.profile.unlocked(g.key) else "A UNLOCK", "B BACK")
 
 
 class ProfileScreen(Scene):
@@ -164,20 +176,19 @@ class ProfileScreen(Scene):
 
     def draw(self, c, ctx):
         c.status("PROFILE", ctx.profile.charge)
-        c.text(2, 9, "CHARGE", DIM)
-        c.text(40, 9, str(ctx.profile.charge), CHARGE)
-        c.text(2, 16, "GAMES", DIM)
-        c.text(40, 16, str(len(ctx.profile.data["unlocked"])), INK)
-        best = max([ctx.profile.best(g.key) for g in ARCADE_GAMES] + [0])
-        c.text(2, 22, "BEST", DIM)
-        c.text(40, 22, str(best), GOOD)
+        rows = [("CHARGE", ctx.profile.charge, CHARGE),
+                ("GAMES", len(ctx.profile.data["unlocked"]), INK),
+                ("BEST", max([ctx.profile.best(g.key) for g in ARCADE_GAMES] + [0]), GOOD)]
+        for i, (label, value, col) in enumerate(rows):
+            y = CONTENT_TOP + i * ROW_H
+            c.text(2, y, label, DIM)
+            t = str(value)
+            c.text(WIDTH - 2 - len(t) * 4, y, t, col)
         c.hints("B BACK")
 
 
 class Toast(Scene):
-    """Brief message, then gone. Used when an unlock is unaffordable."""
-
-    def __init__(self, msg, col=INK, frames=40):
+    def __init__(self, msg, col=INK, frames=45):
         self.msg, self.col, self.left = msg, col, frames
 
     def update(self, s, ctx):
@@ -189,10 +200,38 @@ class Toast(Scene):
     def draw(self, c, ctx):
         c.status("ARCADE", ctx.profile.charge)
         c.banner(self.msg, self.col)
+        c.hints("LEARN TO EARN")
+
+
+class Help(Scene):
+    """Shown briefly before a game. Auto-advances so repeat plays are not
+    slowed down, but A skips it instantly."""
+
+    def __init__(self, game_cls, frames=75):
+        self.game_cls, self.left = game_cls, frames
+
+    def update(self, s, ctx):
+        self.left -= 1
+        if self.left <= 0 or s.pressed(A):
+            return ("replace", self.game_cls())
+        if s.pressed(B):
+            return ("pop", None)
+        return None
+
+    def draw(self, c, ctx):
+        g = self.game_cls
+        accent = LEARN if g.kind == "learn" else ARCADE
+        c.status(g.title, ctx.profile.charge)
+        c.card(HELP.get(g.key, ("", "")), accent)
+        # Thin bar showing it will start on its own. Sits on the last content
+        # row, clear of both help lines.
+        bar = int((1 - self.left / 75) * (WIDTH - 4))
+        c.hline(2, CONTENT_BOT, max(1, bar), FAINT)
+        c.hints("A START", "B BACK")
 
 
 class Results(Scene):
-    """Shown after a learning game. This is where Charge is granted."""
+    """After a learning game. This is where Charge is granted."""
 
     def __init__(self, title, charge, score):
         self.gtitle, self.charge, self.score = title, charge, score
@@ -211,25 +250,82 @@ class Results(Scene):
 
     def draw(self, c, ctx):
         c.status("RESULT", ctx.profile.charge)
-        c.text_centre(9, self.gtitle[:14], DIM)
+        c.text_centre(CONTENT_TOP, self.gtitle[:15], DIM)
         if self.charge:
-            c.text_centre(16, f"+{self.charge}", CHARGE)
-            c.text_centre(22, "CHARGE", DIM)
+            c.text_centre(CONTENT_TOP + 6, f"+{self.charge}", CHARGE)
+            c.text_centre(CONTENT_TOP + 12, "CHARGE", DIM)
         else:
-            c.text_centre(17, "NO CHARGE", DIM)
+            c.text_centre(CONTENT_TOP + 9, "NO CHARGE", DIM)
         c.hints("A OK")
+
+
+# ── Tutorial ──────────────────────────────────────────────────────────────
+class Tutorial(Scene):
+    """Teaches the three controls by making you use each one. Runs once, then
+    is reachable again from Profile if anyone wants it."""
+
+    STEPS = [
+        ("TURN THE DIAL", "dial"),
+        ("PRESS A", "a"),
+        ("PRESS B", "b"),
+    ]
+
+    def enter(self, ctx):
+        self.step = 0
+        self.progress = 0
+        self.done_at = None
+
+    def update(self, s, ctx):
+        if self.done_at is not None:
+            self.done_at += 1
+            if self.done_at > 40:
+                ctx.profile.data["tutorial"] = True
+                ctx.profile.save()
+                return ("pop", None)
+            return None
+
+        kind = self.STEPS[self.step][1]
+        hit = ((kind == "dial" and s.enc(0) != 0)
+               or (kind == "a" and s.pressed(A))
+               or (kind == "b" and s.pressed(B)))
+        if kind == "dial" and s.enc(0):
+            self.progress += abs(s.enc(0))
+            hit = self.progress >= 3
+        if hit:
+            ctx.deck.beep(1200 + self.step * 200, 40)
+            self.step += 1
+            self.progress = 0
+            if self.step >= len(self.STEPS):
+                self.done_at = 0
+        return None
+
+    def draw(self, c, ctx):
+        c.status("HOW TO PLAY")
+        if self.done_at is not None:
+            c.banner("READY", GOOD)
+            c.hints("THAT IS ALL")
+            return
+        label, kind = self.STEPS[self.step]
+        c.text_centre(CONTENT_TOP + 2, label, INK)
+        # One dot per step, filled as you go, so progress is obvious.
+        for i in range(len(self.STEPS)):
+            x = WIDTH // 2 - 8 + i * 8
+            if i < self.step:
+                c.rect(x, CONTENT_TOP + 11, 5, 5, GOOD)
+            else:
+                c.frame(x, CONTENT_TOP + 11, 5, 5, DIM if i == self.step else FAINT)
+        c.hints(f"STEP {self.step + 1}/3", "ANY WAY" if kind == "dial" else None)
 
 
 def wrap_learn(scene_cls):
     """Learning games pop a dict; turn that into a Results screen."""
-    orig_update = scene_cls.update
+    orig = scene_cls.update
 
     def update(self, s, ctx):
-        act = orig_update(self, s, ctx)
+        act = orig(self, s, ctx)
         if act and act[0] == "pop" and isinstance(act[1], dict):
             r = act[1]
-            return ("replace", Results(self.title, r.get("charge", 0),
-                                       r.get("score", 0)))
+            return ("replace", Results(self.title, r.get("charge", 0), r.get("score", 0)))
         return act
 
     scene_cls.update = update
@@ -240,29 +336,35 @@ for _g in LEARN_GAMES:
     wrap_learn(_g)
 
 
-def main(host):
+def main(host, seconds=None):
     panel = Panel(host=host)
     panel.brightness(70)
     deck = Deck()
     ctx = Ctx(Profile(), deck)
-    stack = Stack(Home(), ctx)
+    root = Home()
+    stack = Stack(root, ctx)
+    if not ctx.profile.data.get("tutorial"):
+        stack.scenes.append(Tutorial())
+        stack.top.enter(ctx)
     print(f"Pixy up. charge={ctx.profile.charge}")
 
     frame = 1 / FPS
+    deadline = time.time() + seconds if seconds else None
     try:
-        while True:
+        while deadline is None or time.time() < deadline:
             t0 = time.time()
-            s = deck.poll()
-            stack.update(s)
+            stack.update(deck.poll())
             c = Canvas()
             stack.draw(c)
             panel.show(c.img)
             time.sleep(max(0, frame - (time.time() - t0)))
     except KeyboardInterrupt:
+        pass
+    finally:
         ctx.profile.save()
         panel.clear()
-        print("bye")
 
 
 if __name__ == "__main__":
-    main(sys.argv[1] if len(sys.argv) > 1 else "192.168.1.64")
+    main(sys.argv[1] if len(sys.argv) > 1 else "192.168.1.64",
+         float(sys.argv[2]) if len(sys.argv) > 2 else None)

@@ -6,11 +6,13 @@ position tracks the wrist directly, so it plays like the original cabinet
 rather than a keyboard port of it.
 """
 
-from ..canvas import WIDTH, HEIGHT, INK, DIM, FAINT, LEARN, ARCADE, GOOD
+from ..canvas import (WIDTH, HEIGHT, INK, DIM, FAINT, LEARN, ARCADE, GOOD,
+                      CONTENT_TOP, CONTENT_BOT)
 from ..scene import Scene
 from ..input import UP, DOWN, LEFT, RIGHT, A, B
 
-PADDLE_H, TOP, BOT = 7, 7, 25
+PADDLE_H = 7
+TOP, BOT = CONTENT_TOP, CONTENT_BOT
 WIN_SCORE = 7
 
 
@@ -42,10 +44,8 @@ class Pong(Scene):
         # Player 1 is always encoder 1.
         self.paddle[0] += s.enc(0) * 2
 
-        # Player 2 takes whichever input is actually present: encoder 2 if it
-        # is alive, otherwise up/down. Either way the game is playable, and it
-        # silently gets better if that encoder is ever repaired.
-        p2 = s.enc(1) * 2
+        # Player 2 uses up/down. There is only one dial on this hardware.
+        p2 = 0
         if s.down(UP):
             p2 -= 2
         if s.down(DOWN):
@@ -106,14 +106,13 @@ class Pong(Scene):
         c.rect(2, int(self.paddle[0]), 1, PADDLE_H, LEARN)
         c.rect(WIDTH - 3, int(self.paddle[1]), 1, PADDLE_H, ARCADE)
         c.px(int(self.ball[0]), int(self.ball[1]), INK)
-        c.text(22, 0, str(self.score[0]), LEARN)
-        c.text(38, 0, str(self.score[1]), ARCADE)
-        if not self.human2:
-            c.text(46, 0, "CPU", DIM)
+        # Scores sit either side of the net, clear of the battery.
+        c.text(20, 0, str(self.score[0]), LEARN)
+        c.text(30, 0, str(self.score[1]), ARCADE)
 
         if max(self.score) >= WIN_SCORE:
             who = "LEFT WINS" if self.score[0] > self.score[1] else "RIGHT WINS"
             c.banner(who, LEARN if self.score[0] > self.score[1] else ARCADE)
             c.hints("A AGAIN", "B BACK")
         else:
-            c.hints("2P" if self.human2 else "1P VS CPU", "B BACK")
+            c.hints("2P" if self.human2 else "VS CPU", "B BACK")

@@ -6,7 +6,7 @@ from ..scene import Scene
 from ..input import UP, DOWN, LEFT, RIGHT, A, B
 
 COLS = [GOOD, CHARGE, LEARN, ARCADE]          # up, down, left, right
-BOXES = [(26, 8, 12, 6), (26, 20, 12, 6), (10, 14, 12, 6), (42, 14, 12, 6)]
+BOXES = [(26, 7, 12, 6), (26, 18, 12, 6), (9, 12, 13, 6), (42, 12, 13, 6)]
 
 
 class Simon(Scene):
@@ -59,9 +59,15 @@ class Simon(Scene):
         c.status(f"SIMON {self.score}", ctx.profile.charge)
         for i, (x, y, w, h) in enumerate(BOXES):
             on = self.lit == i
-            c.rect(x, y, w, h, COLS[i] if on else tuple(v // 5 for v in COLS[i]))
+            # Unlit pads keep a visible outline. Dimming them to near-black
+            # made the board look empty between flashes.
+            if on:
+                c.rect(x, y, w, h, COLS[i])
+            else:
+                c.rect(x, y, w, h, tuple(v // 4 for v in COLS[i]))
+                c.frame(x, y, w, h, tuple(v // 2 for v in COLS[i]))
         if self.dead:
             c.banner("WRONG", BAD, f"BEST {ctx.profile.best(self.key)}")
         elif self.showing:
-            c.text(1, 14, "WATCH", DIM)
-        c.hints("A AGAIN" if self.dead else "REPEAT IT", f"{len(self.seq)}")
+            c.text_centre(14, "WATCH", INK)
+        c.hints("A AGAIN" if self.dead else "D-PAD REPEAT", str(len(self.seq)))

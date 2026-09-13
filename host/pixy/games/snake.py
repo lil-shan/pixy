@@ -1,12 +1,12 @@
 """Snake. Directions steer, A restarts."""
 
 import random
-from ..canvas import GOOD, ARCADE, INK, DIM
+from ..canvas import GOOD, ARCADE, INK, DIM, CONTENT_TOP, CONTENT_BOT
 from ..scene import Scene
 from ..input import UP, DOWN, LEFT, RIGHT, A, B
 
-W, H = 64, 19          # play area sits between the status and hint bars
-TOP = 7
+TOP = CONTENT_TOP
+W, H = 64, CONTENT_BOT - CONTENT_TOP + 1
 
 
 class Snake(Scene):

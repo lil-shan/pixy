@@ -48,7 +48,11 @@ class State:
         return bool(self._pressed & (1 << btn))
 
     def enc(self, which=0):
-        """Detents turned since the last poll. Positive is clockwise."""
+        """Detents turned since the last poll. Positive is clockwise.
+
+        This hardware has one dial. enc(1) stays wired through and returns 0,
+        so a second encoder can be added later without touching any game.
+        """
         return self._enc[which]
 
     def any_pressed(self):

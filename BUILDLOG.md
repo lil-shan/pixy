@@ -230,9 +230,38 @@ better spent elsewhere. Nothing in the console requires it:
 
 If it is ever repaired it starts working again with no code change.
 
+## 2026-09-14 — UI pass, done against rendered output
+
+Built `tools/capture.py`, which renders every screen to a contact sheet with
+the LED pitch masked in. Judging legibility at 64x32 by reading source code
+does not work; looking at the output found problems in minutes that had
+survived several sessions.
+
+What it caught:
+
+- **The third menu row was clipped** by the hint bar. Fixed by defining the
+  screen as three fixed bands — status 0-5, content 7-23, hints 25-31 — with
+  the content band sized to exactly three 6px rows.
+- **`DIM` was too dark to read.** At working brightness on a 3 mm pitch panel
+  anything under ~120 reads as off. Greys went from 88 to 158.
+- **Results lost its "CHARGE" line**, Bit Flip's readout sat on top of the bit
+  row, Gear Lab's tooth counts sat on the wheels, Pong's hints overran each
+  other, and the scroll arrow was drawn through Snake's high score.
+- **Gear Lab's gears read as scattered dots.** Teeth alone do not look like a
+  gear at this size; adding a dim rim and a hub fixed it.
+- **Breakout's paddle sat below the content band**, in the hint separator.
+
+Also added: scroll arrows on lists that scroll, a two-line help card before
+every game, a first-run tutorial that makes you use each control once, and
+slide transitions on push/pop. The transition direction is not decoration —
+with no window chrome, a hard cut between screens gives no clue whether you
+went deeper or came back.
+
+Verified by fuzzing 40,000 frames through the live scene stack.
+
 ## Open items
 
-- Encoder 2 dead after three pin sets and a module swap; console does not depend on it
+- One dial. Encoder 2 abandoned; `enc(1)` returns 0 so one can be refitted later
 - Buzzer not yet fitted (passive piezo, A0). `beep()` is already wired
 - Encoder direction convention unconfirmed by feel (sign flip is one constant)
 - ~~`to_rgb565()` pure-Python loop~~ — done, numpy path at 0.033 ms/frame

@@ -21,15 +21,17 @@ from pixy.input import Deck, NAMES, UP, DOWN, LEFT, RIGHT, A, B, START, SELECT  
 # Where each control draws itself. The four directions sit in a cluster that
 # mirrors the physical deck, so a miswired button is obvious at a glance
 # rather than needing to be reasoned about.
+# SELECT is omitted: it was the second encoder's push, and that encoder is
+# no longer fitted.
 LAYOUT = {
     UP:     (10, 9), DOWN: (10, 19), LEFT: (4, 14), RIGHT: (16, 14),
     A:      (32, 11), B: (32, 19),
-    START:  (44, 11), SELECT: (44, 19),
+    START:  (44, 15),
 }
 COLOUR = {
     UP: (80, 220, 255), DOWN: (80, 220, 255), LEFT: (80, 220, 255), RIGHT: (80, 220, 255),
     A: (95, 224, 140), B: (242, 85, 90),
-    START: (255, 192, 46), SELECT: (255, 192, 46),
+    START: (255, 192, 46),
 }
 
 
@@ -61,18 +63,16 @@ def main(host, seconds=None):
                 else:
                     d.point((x, y), fill=(40, 46, 56))
 
-            # Encoder bars: centre line with a cursor that tracks accumulated
-            # detents. Turning one way must move it one way, consistently.
-            for i, value in enumerate(enc):
-                bar_y = 6 + i * 20
-                d.line([(56, bar_y - 5), (56, bar_y + 5)], fill=(40, 46, 56))
-                cursor = bar_y - int(value / 16 * 5)
-                d.rectangle([54, cursor - 1, 58, cursor + 1],
-                            fill=(79, 209, 197) if i == 0 else (255, 97, 130))
+            # One dial, one bar. Turning clockwise must move it consistently
+            # one way -- that is the sign convention, and it is worth checking
+            # before games are written against it.
+            d.line([(56, 4), (56, 28)], fill=(40, 46, 56))
+            cursor = 16 - int(enc[0] / 16 * 11)
+            d.rectangle([53, cursor - 1, 59, cursor + 1], fill=(79, 209, 197))
 
             panel.show(img)
 
-            for btn in NAMES:
+            for btn in LAYOUT:
                 if s.pressed(btn) and btn not in seen:
                     seen.add(btn)
                     print(f"  first press: {NAMES[btn]}   ({len(seen)}/8 controls seen)")
@@ -85,8 +85,8 @@ def main(host, seconds=None):
 
             time.sleep(1 / 30)
     except KeyboardInterrupt:
-        print(f"\nsaw {len(seen)}/8 controls: {sorted(NAMES[b] for b in seen)}")
-        missing = [NAMES[b] for b in NAMES if b not in seen]
+        print(f"\nsaw {len(seen)}/{len(LAYOUT)} controls: {sorted(NAMES[b] for b in seen)}")
+        missing = [NAMES[b] for b in LAYOUT if b not in seen]
         if missing:
             print(f"never pressed: {', '.join(missing)}")
         panel.clear()
