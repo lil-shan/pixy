@@ -76,6 +76,9 @@ with it.
 `arduino-uno-q` `led-matrix` `hub75` `esp32` `education` `stem` `retro-gaming`
 `python` `3d-printing`
 
-## One-line summary
-A STEM learning console for kids: solve engineering puzzles on a 64×32 LED
-matrix, earn Charge, spend it in the arcade. Uses both of the UNO Q's brains.
+## One-line summary (Hackster's summary field)
+A handheld STEM console where you have to earn the arcade: solve engineering
+puzzles on a 64×32 LED matrix to bank Charge, then spend it on Breakout, Pong
+and Snake.
+
+Longer pitches for demos and judging are in [PITCH.md](PITCH.md).
