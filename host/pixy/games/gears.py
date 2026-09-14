@@ -49,7 +49,7 @@ class Gears(DialGame):
         c.px(cx, cy, col)
 
     def draw_problem(self, c, ctx):
-        mid = CONTENT_TOP + 5
+        mid = CONTENT_TOP + 4
         self.wheel(c, 9, mid, 4, self.driver, LEARN, self.phase)
         self.wheel(c, 25, mid, 5, self.value, CHARGE,
                    -self.phase * self.driver / max(1, self.value))

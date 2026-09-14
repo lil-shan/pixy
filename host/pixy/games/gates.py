@@ -18,7 +18,7 @@ BY_LEVEL = [["AND", "OR"], ["AND", "OR"], ["AND", "OR", "XOR"],
 
 
 class Gates(LearnGame):
-    key, title = "gates", "GATE KEEPER"
+    key, title = "gates", "GATES"
     hint = "A FLIP"
 
     def setup(self, level):

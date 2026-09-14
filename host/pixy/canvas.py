@@ -114,21 +114,35 @@ class Canvas:
         self.text((WIDTH - text_width(s)) // 2, y, s, c)
 
     # ── furniture ─────────────────────────────────────────────────────────
-    def status(self, title, charge=None):
-        """Top bar: where you are on the left, Charge battery on the right.
+    def coin(self, x, y, col=CHARGE):
+        """A 5x5 ring. Reads as a coin at this size; a filled blob reads as a
+        full stop."""
+        for dx in (1, 2, 3):
+            self.px(x + dx, y, col)
+            self.px(x + dx, y + 4, col)
+        for dy in (1, 2, 3):
+            self.px(x, y + dy, col)
+            self.px(x + 4, y + dy, col)
 
-        The title is clipped to what actually fits beside the battery, rather
-        than a guessed character count -- otherwise long titles run under it.
+    def status(self, title, charge=None):
+        """Top bar: where you are on the left, Charge on the right.
+
+        Charge is a coin and a number, not a battery. A battery gauge on a
+        battery-powered handheld reads as "power remaining", which is not what
+        it means -- and the exact figure is what you actually need, since the
+        question is always whether you can afford the next unlock.
+
+        The title is clipped to what genuinely fits beside it, measured rather
+        than guessed, so long names never run underneath.
         """
-        limit = (WIDTH - 15) // 4 if charge is not None else WIDTH // 4
-        self.text(1, 0, str(title)[:limit], INK)
+        limit = WIDTH // 4
         if charge is not None:
-            x = WIDTH - 13
-            self.frame(x, 0, 10, 5, CHARGE)
-            self.px(x + 10, 2, CHARGE)
-            fill = max(0, min(8, int(charge / 500 * 8)))
-            if fill:
-                self.rect(x + 1, 1, fill, 3, CHARGE)
+            t = str(int(charge))
+            x = WIDTH - (6 + len(t) * 4)
+            self.coin(x, 0)
+            self.text(x + 6, 0, t, CHARGE)
+            limit = max(1, (x - 2) // 4)
+        self.text(1, 0, str(title)[:limit], INK)
         self.hline(0, STATUS_H - 1, WIDTH, FAINT)
 
     def hints(self, left=None, right=None):

@@ -45,7 +45,7 @@ ARCADE_GAMES = [BreakoutScene, Pong, Snake, Simon]
 # Two lines each, max 15 characters, shown before every game. Nobody should
 # have to guess which button does what on a device with unlabelled controls.
 HELP = {
-    "gates":    ("PICK AN INPUT", "A FLIPS IT"),
+    "gates":    ("MAKE THE OUT", "MATCH THE WANT"),
     "bits":     ("DIAL PICKS BIT", "A FLIPS IT"),
     "seq":      ("WHAT COMES", "NEXT? DIAL IT"),
     "ohm":      ("FIND THE", "MISSING VALUE"),
@@ -94,18 +94,20 @@ class Menu(Scene):
             y = CONTENT_TOP + (i - self.top) * ROW_H
             on = i == self.sel
             col = colour_of(i) if colour_of else self.accent
+            # Clip the label against whatever the note actually needs, rather
+            # than a fixed character count -- "GATE KEEPER" and an "L4" badge
+            # do not both fit at 11 characters.
+            note = note_of(i) if note_of else None
+            note_w = len(str(note)) * 4 + 3 if note is not None else 0
+            room = max(1, (WIDTH - 5 - pad - note_w) // 4)
             # Selected row: bright caret in the accent, label at full white.
             # Unselected: no marker, dimmer label. No background fill.
             if on:
                 c.text(0, y, ">", col)
-                c.text(5, y, label_of(i)[:11], INK)
-            else:
-                c.text(5, y, label_of(i)[:11], DIM)
-            if note_of:
-                n = note_of(i)
-                if n is not None:
-                    t = str(n)
-                    c.text(WIDTH - pad - len(t) * 4, y, t, col if on else FAINT)
+            c.text(5, y, label_of(i)[:room], INK if on else DIM)
+            if note is not None:
+                t = str(note)
+                c.text(WIDTH - pad - len(t) * 4, y, t, col if on else FAINT)
         c.scroll_marks(self.top, ROWS, len(self.items))
 
 
@@ -125,7 +127,7 @@ class Home(Menu):
         c.status("PIXY", ctx.profile.charge)
         self.draw_rows(c, ctx, lambda i: self.items[i],
                        colour_of=lambda i: self.COLOURS[i])
-        c.hints("A OPEN", f"{ctx.profile.charge}")
+        c.hints("A OPEN")
 
 
 class LearnMenu(Menu):
