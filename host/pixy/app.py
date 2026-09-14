@@ -30,13 +30,16 @@ from pixy.scene import Scene, Stack                               # noqa: E402
 from pixy.games.gates import Gates                                # noqa: E402
 from pixy.games.bits import Bits                                  # noqa: E402
 from pixy.games.gears import Gears                                # noqa: E402
+from pixy.games.ohm import Ohm                                    # noqa: E402
+from pixy.games.sequence import Sequence                          # noqa: E402
+from pixy.games.angle import Angle                                # noqa: E402
 from pixy.games.snake import Snake                                # noqa: E402
 from pixy.games.simon import Simon                                # noqa: E402
 from pixy.games.breakout import BreakoutScene                     # noqa: E402
 from pixy.games.pong import Pong                                  # noqa: E402
 
 FPS = 30
-LEARN_GAMES = [Gates, Bits, Gears]
+LEARN_GAMES = [Gates, Bits, Sequence, Ohm, Gears, Angle]
 ARCADE_GAMES = [BreakoutScene, Pong, Snake, Simon]
 
 # Two lines each, max 15 characters, shown before every game. Nobody should
@@ -44,7 +47,10 @@ ARCADE_GAMES = [BreakoutScene, Pong, Snake, Simon]
 HELP = {
     "gates":    ("PICK AN INPUT", "A FLIPS IT"),
     "bits":     ("DIAL PICKS BIT", "A FLIPS IT"),
-    "gears":    ("DIAL THE GEAR", "A LOCKS IT IN"),
+    "seq":      ("WHAT COMES", "NEXT? DIAL IT"),
+    "ohm":      ("FIND THE", "MISSING VALUE"),
+    "gears":    ("MATCH THE", "GEAR RATIO"),
+    "angle":    ("TURN TO THE", "RIGHT ANGLE"),
     "breakout": ("DIAL = PADDLE", "A SERVES"),
     "pong":     ("DIAL = PADDLE", "UP DOWN = P2"),
     "snake":    ("D-PAD STEERS", "EAT THE DOTS"),
@@ -88,10 +94,13 @@ class Menu(Scene):
             y = CONTENT_TOP + (i - self.top) * ROW_H
             on = i == self.sel
             col = colour_of(i) if colour_of else self.accent
+            # Selected row: bright caret in the accent, label at full white.
+            # Unselected: no marker, dimmer label. No background fill.
             if on:
-                c.rect(0, y - 1, WIDTH, ROW_H, (26, 30, 38))
                 c.text(0, y, ">", col)
-            c.text(5, y, label_of(i)[:11], INK if on else DIM)
+                c.text(5, y, label_of(i)[:11], INK)
+            else:
+                c.text(5, y, label_of(i)[:11], DIM)
             if note_of:
                 n = note_of(i)
                 if n is not None:
@@ -133,8 +142,11 @@ class LearnMenu(Menu):
 
     def draw(self, c, ctx):
         c.status("LEARN", ctx.profile.charge)
-        self.draw_rows(c, ctx, lambda i: self.items[i].title,
-                       lambda i: ctx.profile.level_of(self.items[i].key) or None)
+        def lvl(i):
+            st = ctx.profile.data.get("skill", {}).get(self.items[i].key)
+            return ("L%d" % st["lvl"]) if st else None
+
+        self.draw_rows(c, ctx, lambda i: self.items[i].title, lvl)
         c.hints("A PLAY", "B BACK")
 
 

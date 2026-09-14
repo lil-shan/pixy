@@ -1,44 +1,35 @@
-"""Bit Flip -- binary place value.
-
-The lit squares are literally the bits, so the display is the register. Left
-and right pick one, A flips it, and the decimal updates as you go.
-"""
+"""Bit Flip -- binary place value, adaptive."""
 
 import random
 from ..canvas import (INK, DIM, FAINT, GOOD, CHARGE, LEARN,
-                      WIDTH, CONTENT_TOP, CONTENT_BOT)
-from ..scene import Scene
-from ..input import UP, DOWN, LEFT, RIGHT, A, B
+                      WIDTH, CONTENT_TOP)
+from ..input import UP, DOWN, LEFT, RIGHT, A
+from .learn_base import LearnGame
 
-ROUNDS = 5
+WIDTH_BY_LEVEL = [3, 4, 4, 6, 8, 8]
 
 
-class Bits(Scene):
-    key, title, kind = "bits", "BIT FLIP", "learn"
+class Bits(LearnGame):
+    key, title = "bits", "BIT FLIP"
+    hint = "A FLIP"
 
-    def enter(self, ctx):
-        self.round, self.score, self.flash = 0, 0, 0
-        self.new_round()
-
-    def new_round(self):
-        self.width = 4 if self.round < 2 else 8
+    def setup(self, level):
+        self.width = WIDTH_BY_LEVEL[min(level, 6) - 1]
         self.target = random.randint(1, (1 << self.width) - 1)
         self.value = 0
         self.sel = self.width - 1
 
-    def update(self, s, ctx):
-        if s.pressed(B):
-            return ("pop", {"charge": self.score, "score": self.score})
-        if self.flash:
-            self.flash -= 1
-            if self.flash == 0:
-                self.round += 1
-                if self.round >= ROUNDS:
-                    ctx.profile.mark_solved(self.key, self.round)
-                    return ("pop", {"charge": self.score, "score": self.score})
-                self.new_round()
-            return None
+    def header(self):
+        return "BINARY"
 
+    def explain(self):
+        # Show the place values that actually make up the target. This is the
+        # whole lesson: a number is a sum of powers of two.
+        parts = [str(1 << b) for b in range(self.width - 1, -1, -1)
+                 if self.target >> b & 1]
+        return ("%d IS" % self.target, "+".join(parts))
+
+    def play(self, s, ctx):
         step = 0
         if s.pressed(RIGHT):
             step -= 1
@@ -48,39 +39,31 @@ class Bits(Scene):
             step -= s.enc(0)
         if step:
             self.sel = max(0, min(self.width - 1, self.sel + step))
-
         if s.pressed(A):
             self.value ^= 1 << self.sel
-            ctx.deck.beep(800 + self.sel * 90, 15)
+            ctx.deck.beep(800 + self.sel * 90, 12)
             if self.value == self.target:
-                self.score += 25
-                self.flash = 26
-                ctx.deck.beep(1700, 70)
+                self.submit(ctx, True)
+            elif self.value > self.target:
+                # Overshooting is the teachable moment, so say so rather than
+                # letting them flail.
+                self.submit(ctx, False)
         return None
 
-    def draw(self, c, ctx):
-        c.status("BINARY", ctx.profile.charge)
-
+    def draw_problem(self, c, ctx):
         c.text(1, CONTENT_TOP, "WANT", DIM)
         c.text(22, CONTENT_TOP, str(self.target), CHARGE)
         c.text(40, CONTENT_TOP, "NOW", DIM)
         c.text(53, CONTENT_TOP, str(self.value), INK if self.value else FAINT)
-
-        # Bits, most significant on the left, the way they are written down.
-        pitch = 7 if self.width == 8 else 12
+        pitch = 7 if self.width > 4 else 12
         x0 = (WIDTH - self.width * pitch) // 2
         for i in range(self.width):
             bit = self.width - 1 - i
             on = self.value >> bit & 1
-            x = x0 + i * pitch
-            y = CONTENT_TOP + 8
+            x, y = x0 + i * pitch, CONTENT_TOP + 8
             c.rect(x, y, 5, 5, GOOD if on else (34, 38, 46))
             if not on:
                 c.frame(x, y, 5, 5, FAINT)
             if bit == self.sel:
                 c.hline(x, y + 6, 5, LEARN)
                 c.hline(x, y - 2, 5, LEARN)
-
-        if self.flash:
-            c.banner("+25", GOOD)
-        c.hints("A FLIP", f"{self.round + 1}/{ROUNDS}")

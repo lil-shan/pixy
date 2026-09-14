@@ -143,6 +143,29 @@ p.text('HELLO')
 "
 ```
 
+## Learning games
+
+Six, each with its own adaptive level:
+
+| Game | Teaches |
+|---|---|
+| Gate Keeper | AND / OR / XOR / NAND / NOR |
+| Bit Flip | binary place value |
+| Pattern | arithmetic, geometric and Fibonacci sequences |
+| Ohm's Way | V = I x R, and rearranging it |
+| Gear Lab | ratios |
+| Angle | degrees, with the dial as a protractor |
+
+**They adapt independently.** Two first-try corrects in a row moves that game
+up a level; two wrong answers moves it down. A kid who has binary cold but
+finds ratios hard gets hard binary and gentle ratios at the same time, which a
+single global difficulty could never do. Charge paid scales with level, so
+pushing yourself beats farming easy rounds.
+
+**They explain.** A wrong answer opens a one-line card saying *why* -- "V = I
+X R / 3 X 3 = 9", "5 IS / 4+1", "ADD 4 EACH / SO 19" -- then puts you back on
+the same problem. Being told you are wrong teaches nothing on its own.
+
 ## API
 
 ```python

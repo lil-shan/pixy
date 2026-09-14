@@ -259,6 +259,27 @@ went deeper or came back.
 
 Verified by fuzzing 40,000 frames through the live scene stack.
 
+## 2026-09-14 — Learning side built out
+
+Selection highlighting was a dark fill behind the text. On an LED panel that
+is backwards: every pixel lit in the background costs contrast against the
+glyphs. Replaced with brightness -- selected row white with a coloured caret,
+unselected dimmed, no fill.
+
+Added `skill.py`: per-game adaptive difficulty. Two first-try corrects promote,
+two wrongs demote, each game tracked separately. First-try matters, because
+arriving at the answer after three guesses is not the same as knowing it.
+
+Added teach-on-error. Every learning game now explains *why* an answer was
+wrong in one line and returns you to the same problem.
+
+Three new learning games -- Pattern, Ohm's Way, Angle Hunter -- bringing the
+learn track to six, all on a shared adaptive base (`games/learn_base.py`) so
+adding more is a small file rather than a copy-paste.
+
+Two layout faults the renderer caught: the teach card clipped its second line,
+and the left hint collided with the new "L3 2/6" indicator on the right.
+
 ## Open items
 
 - One dial. Encoder 2 abandoned; `enc(1)` returns 0 so one can be refitted later

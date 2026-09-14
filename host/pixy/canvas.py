@@ -29,9 +29,13 @@ HINT_Y       = 26
 # over subtlety, and kids read colour faster than shape at this resolution.
 # Values are deliberately high. On a 3 mm-pitch panel at working brightness
 # anything under ~120 reads as off, so "subtle" greys simply vanish.
-INK      = (245, 247, 252)
-DIM      = (158, 168, 184)
-FAINT    = (72, 80, 94)
+# An LED panel has no backlight: every pixel you light costs contrast against
+# the ones next to it. So selection is shown by making the chosen row brighter
+# and the others dimmer -- never by filling a background behind text, which
+# just raises the black level around the glyphs and makes them mushy.
+INK      = (255, 255, 255)   # selected / primary
+DIM      = (120, 132, 150)   # unselected -- clearly readable, clearly quieter
+FAINT    = (58, 66, 80)      # rules and inactive furniture
 CHARGE   = (255, 192, 46)
 LEARN    = (79, 209, 197)
 ARCADE   = (255, 97, 130)
@@ -161,6 +165,32 @@ class Canvas:
         for i, line in enumerate(lines[:2]):
             col = accent if i == 0 else DIM
             self.text_centre(CONTENT_TOP + 2 + i * 7, str(line)[:15], col)
+
+    def teach(self, lines, accent=CHARGE):
+        """Explanation shown after a wrong answer.
+
+        Being told you are wrong teaches nothing. Being told *why*, in one
+        line, at the moment you were wrong, is most of what this console is
+        for.
+        """
+        # Use the whole content band. Two 5px lines plus borders need every
+        # row of it, and the second line was being clipped by the frame.
+        h = CONTENT_BOT - CONTENT_TOP + 1
+        self.rect(0, CONTENT_TOP, WIDTH, h, BG)
+        self.frame(0, CONTENT_TOP, WIDTH, h, accent)
+        for i, line in enumerate(lines[:2]):
+            self.text_centre(CONTENT_TOP + 2 + i * 7, str(line)[:15],
+                             INK if i == 0 else DIM)
+
+    def level_pips(self, level, maxlevel=6, x=None, y=None):
+        """Difficulty shown as filled pips, so a level change is visible."""
+        x = 1 if x is None else x
+        y = HEIGHT - 5 if y is None else y
+        for i in range(maxlevel):
+            if i < level:
+                self.rect(x + i * 3, y, 2, 2, CHARGE)
+            else:
+                self.px(x + i * 3, y + 1, FAINT)
 
     def banner(self, line, c=INK, sub=None):
         """Modal message. Sized to sit inside the content band so it never
