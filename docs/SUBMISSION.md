@@ -32,25 +32,45 @@ Link the repo: `https://github.com/lil-shan/pixy`
 Hackster can import it directly — use "Add code" → GitHub.
 
 ## Custom parts and enclosures
-Upload from `case/`:
-- `body.stl` — cabinet
-- `deck.stl` — control plate
-- `back.stl` — rear cover
-- `pixy_case.scad` — parametric source
+Upload from `case/enclosure/`:
+- `display_housing.stl` — 199 × 104 × 45 mm, holds panel + XIAO + power bank
+- `handheld_controller.stl` — 128 × 88 × 35 mm, holds UNO Q + deck + battery
+
+Optional, from `case/` — an alternative desktop cabinet, designed but not
+printed. Only include it if you want to show the direction, and label it as
+unbuilt:
+- `pixy_case.scad`, `body.stl`, `deck.stl`, `back.stl`
 
 ## Images to upload
+
+Real photographs first — they carry the project far better than renders.
+
 | File | Use as |
 |---|---|
-| `docs/img/shell.png` | cover image |
-| `docs/img/learn.png` | the six learning games |
-| `docs/img/teach.png` | explanation cards |
-| `docs/img/arcade.png` | arcade games |
-| `docs/img/case.png` | enclosure render |
+| `docs/img/screens/console-home.jpeg` | **cover image** |
+| `docs/img/architecture.png` | how it works |
+| `docs/img/wiring.png` | control deck wiring |
+| `docs/img/build/02-xiao-antenna.jpeg` | step 1 |
+| `docs/img/build/05-wifi-connecting.jpeg` | step 1 |
+| `docs/img/build/03-deck-perfboard.jpeg` | step 2 |
+| `docs/img/build/01-unoq-deck-wiring.jpeg` | step 2 |
+| `docs/img/build/04-deck-in-shell.jpeg` | step 4 |
+| `docs/img/screens/home.jpeg` | step 5 |
+| `docs/img/screens/gates.jpeg` | what it is |
+| `docs/img/screens/gearlab-close.jpeg` | what it is |
+| `docs/img/screens/ohms-way.jpeg` | what it is |
+| `docs/img/teach.png` | teach-on-error |
 
-**Take these before submitting** — they matter more than any render:
-1. The finished console, powered on, showing a learning game
-2. A close-up of the control deck
-3. Someone actually playing it
+## Videos — upload to YouTube, then embed
+
+| Source file | Where it goes | Why |
+|---|---|---|
+| `pixyvideo5.mp4` | **top of the story** | Pattern solved, then a LEVEL 2 promotion banner. Shows adaptive difficulty working in 5 seconds |
+| `pixyvideo6.mp4` | arcade section | Breakout played on the dial |
+| `pixyvideo2.mp4` or `pixyvideo3.mp4` | what it is | someone holding and playing it |
+
+The promotion-banner clip is the single most valuable asset you have. Lead
+with it.
 
 ## Suggested tags
 `arduino-uno-q` `led-matrix` `hub75` `esp32` `education` `stem` `retro-gaming`

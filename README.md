@@ -119,6 +119,20 @@ on A1.
 See [BUILDLOG.md](BUILDLOG.md) for the full iteration history — every failure,
 its cause and its fix.
 
+## Enclosures
+
+Two printed parts, each a tray plus a lid:
+
+| File | Size | Holds |
+|---|---|---|
+| `case/enclosure/display_housing.stl` | 199 × 104 × 45 mm | panel, XIAO, power bank |
+| `case/enclosure/handheld_controller.stl` | 128 × 88 × 35 mm | UNO Q, control deck, battery |
+
+`case/pixy_case.scad` is an alternative single-piece desktop cabinet —
+parametric, designed but not yet printed.
+
+See [HACKSTER.md](HACKSTER.md) for the full build guide.
+
 ## Setup
 
 **ESP32 side**
