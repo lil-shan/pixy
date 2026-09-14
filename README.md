@@ -156,8 +156,25 @@ Six, each with its own adaptive level:
 | Gear Lab | ratios |
 | Angle | degrees, with the dial as a protractor |
 
-**They adapt independently.** Two first-try corrects in a row moves that game
-up a level; two wrong answers moves it down. A kid who has binary cold but
+**They adapt independently, across eight levels.** Two first-try corrects in a
+row moves that game up; two wrong answers moves it down. The bar to climb
+rises with the level -- two in a row early, three from level 4, four from
+level 6 -- so the top is earned rather than stumbled into. Roughly twenty
+clean answers to reach level 8.
+
+What changes as you climb:
+
+| Game | At the top |
+|---|---|
+| Gates | the gate stops telling you what it is; deduce it by experiment |
+| Bit Flip | 8 bits, and the running total is hidden -- sum it yourself |
+| Pattern | squares and growing-gap sequences, not just constant steps |
+| Ohm's Way | awkward numbers, any of the three unknown |
+| Gear Lab | real ratios like 5:3, not whole multiples |
+| Angle | any angle, no readout, within 3 degrees by eye |
+
+Two first-try corrects in a row moves that game up a level; two wrong moves it
+down. A kid who has binary cold but
 finds ratios hard gets hard binary and gentle ratios at the same time, which a
 single global difficulty could never do. Charge paid scales with level, so
 pushing yourself beats farming easy rounds.

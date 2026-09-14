@@ -6,7 +6,8 @@ from ..canvas import (INK, DIM, FAINT, GOOD, CHARGE, LEARN,
 from ..input import UP, DOWN, LEFT, RIGHT, A
 from .learn_base import LearnGame
 
-WIDTH_BY_LEVEL = [3, 4, 4, 6, 8, 8]
+WIDTH_BY_LEVEL = [3, 4, 5, 6, 7, 8, 8, 8]
+HIDE_TOTAL_FROM = 6
 
 
 class Bits(LearnGame):
@@ -14,10 +15,16 @@ class Bits(LearnGame):
     hint = "A FLIP"
 
     def setup(self, level):
-        self.width = WIDTH_BY_LEVEL[min(level, 6) - 1]
+        lv = min(level, 8)
+        self.width = WIDTH_BY_LEVEL[lv - 1]
+        # Past level 6 the running total is hidden, so the sum has to be done
+        # in your head rather than read off the screen.
+        self.hide_total = lv >= HIDE_TOTAL_FROM
         self.target = random.randint(1, (1 << self.width) - 1)
         self.value = 0
-        self.sel = self.width - 1
+        # Start from a random position rather than always the far end, so the
+        # first few moves are not the same every round.
+        self.sel = random.randrange(self.width)
 
     def header(self):
         return "BINARY"
@@ -53,8 +60,11 @@ class Bits(LearnGame):
     def draw_problem(self, c, ctx):
         c.text(1, CONTENT_TOP, "WANT", DIM)
         c.text(22, CONTENT_TOP, str(self.target), CHARGE)
-        c.text(40, CONTENT_TOP, "NOW", DIM)
-        c.text(53, CONTENT_TOP, str(self.value), INK if self.value else FAINT)
+        if not self.hide_total:
+            c.text(40, CONTENT_TOP, "NOW", DIM)
+            c.text(53, CONTENT_TOP, str(self.value), INK if self.value else FAINT)
+        else:
+            c.text(44, CONTENT_TOP, "? ?", FAINT)
         pitch = 7 if self.width > 4 else 12
         x0 = (WIDTH - self.width * pitch) // 2
         for i in range(self.width):

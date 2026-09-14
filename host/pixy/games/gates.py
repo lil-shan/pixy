@@ -1,4 +1,10 @@
-"""Gate Keeper -- boolean logic, adaptive."""
+"""Gate Keeper -- boolean logic, adaptive.
+
+Past level 5 the gate stops telling you what it is. You flip inputs, watch the
+output, work out what it must be, then drive it to the target. That turns it
+from recall into the thing you actually want a kid doing: forming a hypothesis
+and testing it.
+"""
 
 import random
 from ..canvas import INK, DIM, FAINT, GOOD, BAD, LEARN, CHARGE, CONTENT_TOP
@@ -6,15 +12,19 @@ from ..input import UP, DOWN, LEFT, RIGHT, A
 from .learn_base import LearnGame
 
 KINDS = {
-    "AND": (lambda a, b: a and b,        "BOTH MUST BE 1"),
-    "OR":  (lambda a, b: a or b,         "EITHER ONE 1"),
-    "XOR": (lambda a, b: a != b,         "ONE, NOT BOTH"),
-    "NAN": (lambda a, b: not (a and b),  "AND, UPSIDE DOWN"),
-    "NOR": (lambda a, b: not (a or b),   "OR, UPSIDE DOWN"),
+    "AND": (lambda a, b: a and b,       "BOTH MUST BE 1"),
+    "OR":  (lambda a, b: a or b,        "EITHER ONE 1"),
+    "XOR": (lambda a, b: a != b,        "ONE, NOT BOTH"),
+    "NAN": (lambda a, b: not (a and b), "AND, FLIPPED"),
+    "NOR": (lambda a, b: not (a or b),  "OR, FLIPPED"),
 }
-BY_LEVEL = [["AND", "OR"], ["AND", "OR"], ["AND", "OR", "XOR"],
-            ["AND", "OR", "XOR", "NAN"], ["OR", "XOR", "NAN", "NOR"],
-            ["AND", "OR", "XOR", "NAN", "NOR"]]
+BY_LEVEL = [
+    ["AND", "OR"], ["AND", "OR"], ["AND", "OR", "XOR"],
+    ["AND", "OR", "XOR", "NAN"], ["AND", "OR", "XOR", "NAN", "NOR"],
+    ["AND", "OR", "XOR", "NAN", "NOR"], ["AND", "OR", "XOR", "NAN", "NOR"],
+    ["AND", "OR", "XOR", "NAN", "NOR"],
+]
+HIDE_FROM = 5
 
 
 class Gates(LearnGame):
@@ -22,18 +32,24 @@ class Gates(LearnGame):
     hint = "A FLIP"
 
     def setup(self, level):
-        self.name = random.choice(BY_LEVEL[min(level, 6) - 1])
+        lv = min(level, 8)
+        self.name = random.choice(BY_LEVEL[lv - 1])
         self.fn, self.why = KINDS[self.name]
-        self.a, self.b = random.choice([0, 1]), random.choice([0, 1])
-        self.target = 0 if self.fn(self.a, self.b) else 1
+        self.hidden = lv >= HIDE_FROM
+        # Target is genuinely random, not just "whatever you are not showing".
+        # Re-roll the inputs until the puzzle actually needs work.
+        for _ in range(20):
+            self.a, self.b = random.choice([0, 1]), random.choice([0, 1])
+            self.target = random.choice([0, 1])
+            if int(bool(self.fn(self.a, self.b))) != self.target:
+                break
         self.sel = 0
-        self.checked = False
 
     def header(self):
-        return self.name
+        return "?" if self.hidden else self.name
 
     def explain(self):
-        return (self.name + " " + str(self.target), self.why)
+        return (self.name + " -> " + str(self.target), self.why)
 
     def play(self, s, ctx):
         if s.pressed(UP) or s.pressed(LEFT):
@@ -48,10 +64,7 @@ class Gates(LearnGame):
             else:
                 self.b ^= 1
             ctx.deck.beep(900, 12)
-            out = int(bool(self.fn(self.a, self.b)))
-            # Only judge once both inputs have been touched at least once --
-            # otherwise a lucky first flip counts as mastery.
-            if out == self.target:
+            if int(bool(self.fn(self.a, self.b))) == self.target:
                 self.submit(ctx, True)
         return None
 
@@ -64,7 +77,8 @@ class Gates(LearnGame):
             c.text(3, y + 1, str(v), GOOD if v else BAD)
             c.hline(9, y + 3, 5, FAINT)
         c.frame(14, CONTENT_TOP + 1, 16, 16, INK)
-        c.text(16, CONTENT_TOP + 7, self.name, INK)
+        label = "?" if self.hidden else self.name
+        c.text(16 if not self.hidden else 20, CONTENT_TOP + 7, label, INK)
         c.hline(30, CONTENT_TOP + 8, 6, FAINT)
         c.frame(36, CONTENT_TOP + 5, 9, 9, DIM)
         c.text(39, CONTENT_TOP + 7, str(out), GOOD if out else BAD)

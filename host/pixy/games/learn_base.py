@@ -44,6 +44,9 @@ class LearnGame(Scene):
         return self.title
 
     # ── shared ────────────────────────────────────────────────────────────
+    # Solve inside this many frames (30 fps) for the full speed bonus.
+    QUICK_FRAMES = 150
+
     def enter(self, ctx):
         self.sk = Skill(ctx.profile, self.key)
         self.round = 0
@@ -51,6 +54,7 @@ class LearnGame(Scene):
         self.tries = 0
         self.state = PLAY
         self.timer = 0
+        self.elapsed = 0
         self.lines = ()
         self.msg = ""
         self.setup(self.sk.level)
@@ -58,7 +62,10 @@ class LearnGame(Scene):
     def submit(self, ctx, correct):
         if correct:
             promoted = self.sk.right(first_try=(self.tries == 0))
-            gain = 10 + self.sk.level * 5
+            # Harder levels pay more, and being quick pays more again -- so
+            # pushing your level beats farming easy rounds slowly.
+            bonus = max(0, 10 - int(10 * self.elapsed / self.QUICK_FRAMES))
+            gain = 10 + self.sk.level * 5 + (bonus if self.tries == 0 else 0)
             self.score += gain
             self.msg = "+%d" % gain
             self.promoted = promoted
@@ -91,10 +98,12 @@ class LearnGame(Scene):
                     ctx.profile.mark_solved(self.key, self.sk.level)
                     return ("pop", {"charge": self.score, "score": self.score})
                 self.tries = 0
+                self.elapsed = 0
                 self.setup(self.sk.level)
                 self.state = PLAY
             return None
 
+        self.elapsed += 1
         return self.play(s, ctx)
 
     def draw(self, c, ctx):

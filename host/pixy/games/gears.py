@@ -17,16 +17,25 @@ class Gears(DialGame):
     hint = "A LOCK"
 
     def setup(self, level):
-        self.driver = random.choice([8, 10, 12] if level <= 2 else [6, 8, 9, 10, 12])
-        mult = random.choice([2, 3] if level <= 2 else
-                             [2, 3, 4] if level <= 4 else [2, 3, 4, 5])
-        self.answer = self.driver * mult
-        self.mult = mult
+        lv = min(level, 8)
+        self.driver = random.choice([8, 10, 12] if lv <= 2 else [6, 8, 9, 10, 12])
+        if lv <= 6:
+            num, den = random.choice([2, 3] if lv <= 2 else
+                                     [2, 3, 4] if lv <= 4 else [2, 3, 4, 5]), 1
+        else:
+            # Ratios that are not whole multiples, which is what real gear
+            # trains look like.
+            num, den = random.choice([(3, 2), (5, 2), (4, 3), (5, 3), (5, 4)])
+            self.driver = den * random.choice([2, 3, 4])
+        self.num, self.den = num, den
+        self.answer = self.driver * num // den
         self.value = self.driver
         self.phase = 0.0
 
     def explain(self):
-        return ("%d TEETH X %d" % (self.driver, self.mult),
+        if self.den == 1:
+            return ("%d X %d" % (self.driver, self.num), "IS %d" % self.answer)
+        return ("%d X %d / %d" % (self.driver, self.num, self.den),
                 "IS %d" % self.answer)
 
     def ratio_text(self, a, b):
@@ -56,6 +65,6 @@ class Gears(DialGame):
         c.text(5, CONTENT_BOT - 4, str(self.driver), LEARN)
         c.text(22, CONTENT_BOT - 4, str(self.value), CHARGE)
         c.text(40, CONTENT_TOP, "WANT", DIM)
-        c.text(40, CONTENT_TOP + 7, "1:%d" % self.mult, INK)
+        c.text(40, CONTENT_TOP + 7, "%d:%d" % (self.den, self.num), INK)
         ok = self.value == self.answer
         c.text(40, CONTENT_TOP + 14, "OK" if ok else "..", GOOD if ok else FAINT)

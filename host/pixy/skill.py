@@ -17,9 +17,22 @@ knowing it, so only a clean answer counts toward promotion.
 """
 
 MIN_LEVEL = 1
-MAX_LEVEL = 6
-PROMOTE_AT = 2
+MAX_LEVEL = 8
 DEMOTE_AT = 2
+
+
+def promote_at(level):
+    """Climbing gets harder as you climb.
+
+    Two in a row is the right bar early, when the point is to move a beginner
+    off the easy content quickly. Near the top it would let someone coast up
+    on luck, so the bar rises to three and then four.
+    """
+    if level >= 6:
+        return 4
+    if level >= 4:
+        return 3
+    return 2
 
 
 class Skill:
@@ -51,7 +64,7 @@ class Skill:
         self.state["dn"] = 0
         self.state["up"] += 1
         promoted = False
-        if self.state["up"] >= PROMOTE_AT and self.level < MAX_LEVEL:
+        if self.state["up"] >= promote_at(self.level) and self.level < MAX_LEVEL:
             self.state["lvl"] = self.level + 1
             self.state["up"] = 0
             promoted = True

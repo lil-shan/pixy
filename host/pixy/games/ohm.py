@@ -13,11 +13,19 @@ class Ohm(DialGame):
     key, title = "ohm", "OHMS WAY"
 
     def setup(self, level):
-        # Keep the arithmetic clean at low levels; let it get awkward later.
-        i = random.choice([1, 2, 3] if level <= 2 else [2, 3, 4, 5, 6])
-        r = random.choice([2, 3, 4, 5] if level <= 2 else [4, 6, 8, 10, 12])
+        # Clean arithmetic early, awkward later.
+        lv = min(level, 8)
+        if lv <= 2:
+            i = random.choice([1, 2, 3])
+            r = random.choice([2, 3, 4, 5])
+        elif lv <= 5:
+            i = random.choice([2, 3, 4, 5, 6])
+            r = random.choice([4, 6, 8, 10, 12])
+        else:
+            i = random.choice([3, 4, 6, 7, 8, 9])
+            r = random.choice([7, 9, 11, 13, 15, 20])
         self.i, self.r, self.v = i, r, i * r
-        self.unknown = "V" if level <= 1 else random.choice(["V", "I", "R"])
+        self.unknown = "V" if lv <= 1 else random.choice(["V", "I", "R"])
         self.answer = {"V": self.v, "I": self.i, "R": self.r}[self.unknown]
         self.hi = max(60, self.answer * 3)
         self.value = 1
